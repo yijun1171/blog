@@ -81,6 +81,9 @@ disqus_shortname:
 ## Themes: https://github.com/hexojs/hexo/wiki/Themes
 theme: pacman
 exclude_generator:
+# plugins
+plugins:
+- hexo-generator-feed
 
 # Deployment
 ## Docs: http://hexo.io/docs/deployment.html

@@ -5,7 +5,7 @@ categories: java
 ---
 Lucene学习笔记(一)
 
-文件系统实例
+初识Lucene,文件系统实例
 
 参考原文来自:[实战Lucene](https://www.ibm.com/developerworks/cn/java/j-lo-lucene1/)
 <!--more-->
@@ -36,31 +36,33 @@ Lucene是一个基于java的全文信息检索**工具包**,他以jar包的形�
 
 实例1.对文本文件建立索引
 
-    Directory indexDir = FSDirectory.open(
+```
+Directory indexDir = FSDirectory.open(
                     new File("/home/yj/code/java/lucene/indexDir"));
 
-    File dataDir = new File("/home/yj/code/java/lucene/dataDir");
+File dataDir = new File("/home/yj/code/java/lucene/dataDir");
 
-    Analyzer luceneAnalyzer = new StandardAnalyzer();
+Analyzer luceneAnalyzer = new StandardAnalyzer();
 
-    File[] dataFiles = dataDir.listFiles();
+File[] dataFiles = dataDir.listFiles();
 
-    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_10_2,luceneAnalyzer);
+IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_10_2,luceneAnalyzer);
 
-    IndexWriter indexWriter = new IndexWriter(indexDir,config);
+IndexWriter indexWriter = new IndexWriter(indexDir,config);
 
-    for(int i = 0; i < dataFiles.length; i++){
-      if(dataFiles[i].isFile() && dataFiles[i].getName().endsWith(".txt")){
-        System.out.println("indexing file:" + dataFiles[i].getCanonicalPath());
-        Document document = new Document();
-        Reader textReader = new FileReader(dataFiles[i]);
-        document.add(new TextField("path",dataFiles[i].getCanonicalPath(), Field.Store.YES));
-        document.add(new TextField("content",textReader));
-        document.add(new TextField("name",dataFiles[i].getName(), Field.Store.YES));
-        indexWriter.addDocument(document);
-      }
-    }
-    indexWriter.commit();
+for(int i = 0; i < dataFiles.length; i++){
+  if(dataFiles[i].isFile() && dataFiles[i].getName().endsWith(".txt")){
+  System.out.println("indexing file:" + dataFiles[i].getCanonicalPath());
+  Document document = new Document();
+  Reader textReader = new FileReader(dataFiles[i]);
+  document.add(new TextField("path",dataFiles[i].getCanonicalPath(), Field.Store.YES));
+  document.add(new TextField("content",textReader));
+  document.add(new TextField("name",dataFiles[i].getName(), Field.Store.YES));
+  indexWriter.addDocument(document);
+  }
+}
+  indexWriter.commit();
+```
 
 本实例基于Lucene4.10 版本升级,api改动很大,参考[最新的api文档](http://lucene.apache.org/core/4_10_2/core/overview-summary.html#overview_description)
 
@@ -96,7 +98,7 @@ Lucene支持的最基本的查询类
 Represents hits returned by ``IndexSearcher.search(Query,Filter,int)`` and ``IndexSearcher.search(Query,int)``.
 
 实例2.查询
-
+```java
     File indexDir = new File("/home/yj/code/java/lucene/indexDir");
       Query query = new TermQuery(new Term("content","foo"));
         try {
@@ -112,6 +114,8 @@ Represents hits returned by ``IndexSearcher.search(Query,Filter,int)`` and ``Ind
        } catch (IOException e) {
          e.printStackTrace();
        }
-
+```
 **TermQuery**对象由**Term**构造,搜索结果由**TopDoc**对象保持.
 以上实例基于文件系统的文件索引和搜索.
+
+**体验:Lucene提供一些简单好用的API帮助开发者快速完成建立索引和内容搜索功能**

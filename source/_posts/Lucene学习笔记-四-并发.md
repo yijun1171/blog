@@ -27,6 +27,14 @@ Lucene提供的锁实现:**NativeFSLockFactory**,**SimpleFSFactory**,**SingleIns
 
 Lucene不提供申请锁的队列机制,需要自己实现
 
+---
+
+## 多线程和并行处理
+
+### 使用多线程进行索引操作
+
+---
+
 ## 调试索引
 1. 可以用一下方法将信息输出到控制台
 ```

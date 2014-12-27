@@ -80,12 +80,24 @@ Client端
 Example:
 
 # 课程源码解读
+课程提供的两个源文件使用channel和mutex两种方法实现了简单的rpc底层通信过程,实现简单,我们主要学习用golang实现的思想和方法
 
 ## channel
 本实例使用简单的channel和goroution,用io模拟网络通信过程,实现toyRPC过程
 
 Client关键点:
 使用channel缓存请求和响应,使用select语句对io进行多路复用
+Call使用channel写入和读取请求
+```
+func (tc *ToyClient) Call(procNum int32, arg int32) int32 {
+  done := make(chan int32) // for tc.Listener()
+  tc.requestchan <- RequestChan{Request{int64(0), procNum, arg}, done} //将本次请求写入请求缓冲通道
+  reply := <- done // 从响应缓冲通道中读取
+  return reply
+}
+```
+
+
 ```
 for {
   var xid int64
@@ -132,6 +144,7 @@ for {
 **收获**:利用channel实现的一个简单有效的非阻塞请求处理思想,这也是golang处理并发和异步的精髓
 
 ## mutex
+使用mutex实现rpc的底层调用
 这里主要用到了sync包中的互斥锁Mutex和条件变量Cond
 阅读官方文档:
 [Mutex](https://golang.org/pkg/sync/#Mutex)
@@ -141,4 +154,92 @@ Mutex的两个导出方法:
 *Unlock*:释放锁
 有一句很重要的解释:Mutex的所有权不在加锁的goroutione上,它允许其他goroutine去释放锁
 
+Cond
+每个条件变量使用跟一个锁相关联(**Mutex**或者**RWMutex**)
+导出方法:
+*NewCond*:使用互斥锁初始化
+*Broadcast*:唤醒所有挂起的线程,调用时不要求持有锁
+*Signal*:唤醒一个挂起的线程,调用时不要求持有锁
+*Wait*:调用Wait时会将持有的锁释放,然后等待其他线程调用*Broadcast*或者*Signal*唤醒,被唤醒后,*Wait*返回之前会将锁锁住,但是Wait第一次恢复时不保证锁被锁住,也就不能假设条件变量为true,因此需要用一个循环去测试条件变量,
+exampler from doc
+```
+c.L.Lock()
+for !condition {
+  c.Wait()
+}
+....
+c.L.Unlock()
+```
+
+与使用**channel**的实现不同,这里使用**Cond**条件变量来表示一次请求是否完成
+```
+type State struct {
+  cond *sync.Cond //请求是否完成
+  reply *Reply  //封装响应信息
+}
+```
+
+Client关键点:
+Call方法
+
+```
+func (tc *ToyClient) Call(procNum int32, arg int32) int32 {
+  tc.mu.Lock() //全局共享的互斥锁
+  defer tc.mu.Unlock()
+
+  xid := tc.xid // allocate a unique xid
+  tc.xid++
+  tc.pending[xid] = &State{sync.NewCond(&tc.mu), nil} //每一次调用请求开始,生成一个State表示一次请求的完成状态,使用全局的互斥锁来构造条件变量
+  req := &Request{xid,procNum, arg}
+  tc.WriteRequest(req) // send to server
+
+  for tc.pending[xid].reply == nil { //循环测试条件,没有得到服务器响应,当得到服务器响应时跳出循环
+    tc.pending[xid].cond.Wait() //本线程挂起,解开互斥锁,其他线程有机会向服务器发送调用请求
+  }
+  
+  r := tc.pending[xid].reply
+  delete(tc.pending, xid)
+  return r.Res
+}
+```
+listener,客户端被创建时,使用go语句调用,专门负责监听响应
+```
+func (tc *ToyClient) Listener() {
+  for {
+    reply := tc.ReadReply()
+    tc.mu.Lock() //请求锁
+    entry, ok := tc.pending[reply.Xid] //获取对应的State.Reply
+    if ok {
+      entry.reply = reply;
+      entry.cond.Signal() //唤醒对应挂起的线程,表示本次调用得到响应,Call方法得以返回
+    }
+    tc.mu.Unlock() //释放锁
+  }
+}
+```
+
+server关键点
+dispatcher,同样是server启动时由go语句执行,专门负责调用请求的派发
+```
+func (ts *ToyServer) Dispatcher() {
+  for {
+    req := ts.ReadRequest()
+    ts.mu.Lock() //全局互斥锁
+    fn, ok := ts.handlers[req.ProcNum]
+    ts.mu.Unlock()
+    go func() { //非阻塞执行调用
+      reply := Reply{req.Xid, 0}
+      if ok {
+        reply.Res = fn(req.Arg)
+      }
+      ts.mu.Lock()
+      ts.WriteReply(&reply)
+      ts.mu.Unlock()
+    }()
+  }
+}
+```
+
+### 两种方法的比较
+channel方式实现更加go style
 

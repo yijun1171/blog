@@ -114,6 +114,7 @@ for {
   }
 }
 ```
+![client结构图](/img/golang-client.jpeg)
 
 Server关键点:
 使用channel分离request的接收和response的响应
@@ -220,7 +221,7 @@ func (tc *ToyClient) Listener() {
 
 server关键点
 dispatcher,同样是server启动时由go语句执行,专门负责调用请求的派发
-```
+```golang
 func (ts *ToyServer) Dispatcher() {
   for {
     req := ts.ReadRequest()

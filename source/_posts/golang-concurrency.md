@@ -5,7 +5,7 @@ categories: golang
 ---
 # golang并发编程学习笔记
 主要涉及channel goroutine 同步
-参照阅读<<Go并发编程实战>>
+参照阅读<< Go并发编程实战 >>
 
 <!--more-->
 # Goroutine

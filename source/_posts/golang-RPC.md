@@ -244,3 +244,24 @@ func (ts *ToyServer) Dispatcher() {
 ### 两种方法的比较
 channel方式实现更加go style
 
+# rpc package
+golang提供了rpc的基础包
+我们在这里使用[jsonrpc](https://golang.org/pkg/net/rpc/jsonrpc/)
+
+## 要求
+1. 服务器端,声明一个导出类型作为服务,为该类型声明至少一个导出方法.方法要求:
+  1. 方法导出
+  2. 有两个参数,都是导出的类型
+  3. 第二个参数是指针类型
+  4. 返回值是error
+形如
+```
+func (t *T)MethodName(argType T1, replyType *T2) error
+```
+2. 调用`rpc.register(service)`,将声明的服务的指针注册到rpc上
+3. 监听指定端口
+4. 将到达的请求交给指定方法进行解码,这里使用`server.ServeCodec(jsonrpc.NewServerCodec(conn))`
+5. 客户端使用`jsonrpc.Dial(netword, address)`方法向服务端发起请求
+6. 方法调用时使用`rpc.Client`的导出方法`Call(serviceMethod, args, reply)`,其中第三个参数必须是指针类型,注意,serviceMethod必须形如**service.method**,service是服务器端注册服务的类型名,method是调用的方法名
+
+

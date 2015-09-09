@@ -3,7 +3,7 @@ date: 2014-12-12 20:09:07
 tags: distributed-system
 categories: golang
 ---
-#分布式系统学习笔记
+# 分布式系统学习笔记
 ## Lab1.Distributed Password Cracker
 
 ### 实验内容:

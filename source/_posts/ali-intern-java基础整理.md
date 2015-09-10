@@ -4,8 +4,9 @@ tags: intern
 categories: java
 ---
 
-# java基础
+记录一些java基础的学习笔记
 
+<!--more-->
 ## 并发
 
 ### 内存模型
